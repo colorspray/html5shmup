@@ -57,6 +57,7 @@ BasicGame.Game.prototype = {
         this.player.speed = 300;
         this.player.body.collideWorldBounds = true;
         this.player.body.setSize(20, 20, 0, -5);
+        this.weaponLevel = 0;
     },
 
     setupEnemies: function () {
@@ -173,6 +174,19 @@ BasicGame.Game.prototype = {
         this.physics.arcade.overlap(
             this.player, this.enemyBulletPool, this.playerHit, null, this
         );
+
+        this.physics.arcade.overlap(
+            this.player, this.powerUpPool, this.playerPowerUp, null, this
+        );
+    },
+
+    playerPowerUp:function(player, powerUp){
+        this.score += 100;
+        this.scoreText.text = this.score;
+        powerUp.kill();
+        if (this.weaponLevel < 5) {
+            this.weaponLevel++;
+        }
     },
 
     spawnEnemies:function(){
@@ -187,7 +201,7 @@ BasicGame.Game.prototype = {
 
         if (this.nextShooterAt < this.time.now && this.shooterPool.countDead() > 0){
             this.nextShooterAt = this.time.now + this.shooterDelay;
-            var enemy = this.shooterPool.getFirstExists(false);
+            enemy = this.shooterPool.getFirstExists(false);
 
             enemy.reset(this.rnd.integerInRange(20, 1004), 0);
             var target = this.rnd.integerInRange(20, 1004);
@@ -267,6 +281,7 @@ BasicGame.Game.prototype = {
         var life = this.lives.getFirstAlive();
         if (life){
             life.kill();
+            this.weaponLevel = 0;
             this.ghostUntil = this.time.now + 3000;
             this.player.play('ghost');
         }
@@ -282,21 +297,38 @@ BasicGame.Game.prototype = {
             return;
         }
 
-        if (this.bulletPool.countDead() == 0) {
-            return;
-        }
-
         this.nextShotAt = this.time.now + this.shotDelay;
-        var bullet1 = this.bulletPool.getFirstExists(false);
-        bullet1.reset(this.player.x - 15, this.player.y - 20);
-        bullet1.body.velocity.y = -500;
 
-        var bullet2 = this.bulletPool.getFirstExists(false);
-        bullet2.reset(this.player.x + 15, this.player.y - 20);
-        bullet2.body.velocity.y = -500;
+        if (this.weaponLevel == 0){
+            if (this.bulletPool.countDead() == 0){
+                return;
+            }
+            var bullet = this.bulletPool.getFirstExists(false);
+            bullet.reset(this.player.x, this.player.y - 20);
+            bullet.body.velocity.y = -500;
+        }
+        else
+        {
+            if (this.bulletPool.countDead() < this.weaponLevel * 2){
+                return;
+            }
+            for (var i = 0; i < this.weaponLevel; ++i){
+                bullet = this.bulletPool.getFirstExists(false);
+                bullet.reset(this.player.x - (10 + i * 6), this.player.y - 20);
+                this.physics.arcade.velocityFromAngle(
+                    -95 - i * 10, 500, bullet.body.velocity
+                );
+
+                bullet = this.bulletPool.getFirstExists(false);
+                bullet.reset(this.player.x + (10 + i * 6), this.player.y - 20);
+                this.physics.arcade.velocityFromAngle(
+                    -85 + i * 10, 500, bullet.body.velocity
+                );
+            }
+        }
     },
 
-    quitGame: function (pointer) {
+    quitGame: function () {
 
         //  Here you should destroy anything you no longer need.
         //  Stop music, delete sprites, purge caches, free resources, all that good stuff.
@@ -341,12 +373,14 @@ BasicGame.Game.prototype = {
             this.explode(enemy);
             if (enemy.key === "greenEnemy"){
                 this.score += 100;
+                this.spawnPowerUp(0.3, enemy);
             }
             else if (enemy.key === "whiteEnemy"){
                 this.score += 400;
+                this.spawnPowerUp(0.5, enemy);
             }
             this.scoreText.text = this.score;
-            if (this.score >= 2000){
+            if (this.score >= 20000){
                 this.enemyPool.destroy();
                 this.shooterPool.destroy();
                 this.enemyBulletPool.destroy();
@@ -355,7 +389,28 @@ BasicGame.Game.prototype = {
         }
     },
 
+    spawnPowerUp:function(probability, enemy){
+        if (this.powerUpPool.countDead() == 0 || this.weaponLevel == 5){
+            return;
+        }
+
+        if (this.rnd.frac() < probability){
+            var powerUp = this.powerUpPool.getFirstExists(false);
+            powerUp.reset(enemy.x, enemy.y);
+            powerUp.body.velocity.y = 100;
+        }
+    },
+
     setupPlayerIcons:function(){
+        this.powerUpPool = this.add.group();
+        this.powerUpPool.enableBody = true;
+        this.powerUpPool.physicsBodyType = Phaser.Physics.ARCADE;
+        this.powerUpPool.createMultiple(5, 'powerup1');
+        this.powerUpPool.setAll('anchor.x', 0.5);
+        this.powerUpPool.setAll('anchor.y', 0.5);
+        this.powerUpPool.setAll('outOfBoundsKill', true);
+        this.powerUpPool.setAll('checkWorldBounds', true);
+
         this.lives = this.add.group();
         for (var i = 0; i < 3; i++){
             var life = this.lives.create(924 + (30 * i), 30, 'player');
