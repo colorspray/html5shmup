@@ -4,8 +4,5 @@
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
-  <component name="TaskProjectConfiguration">
-    <server type="GitHub" url="https://github.com" />
-  </component>
 </project>
 
