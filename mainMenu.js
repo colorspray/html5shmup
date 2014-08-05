@@ -1,18 +1,12 @@
 BasicGame.MainMenu = function (game) {
 
-    this.music = null;
-    this.playButton = null;
 
 };
 
 BasicGame.MainMenu.prototype = {
 
-    preload:function(){
-        this.load.image('titlepage', 'assets/titlepage.png');
-    },
-
     create: function () {
-
+        this.titlePage = this.add.sprite(0, 0, 'titlepage');
     },
 
     update: function () {
@@ -24,7 +18,7 @@ BasicGame.MainMenu.prototype = {
 
     },
 
-    startGame: function (pointer) {
+    startGame: function () {
 
         //  Ok, the Play Button has been clicked or touched, so let's stop the music (otherwise it'll carry on playing)
         // this.music.stop();
